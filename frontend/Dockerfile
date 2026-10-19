@@ -1,16 +1,19 @@
-FROM node:18-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
 COPY package*.json ./
-
-RUN npm install
+RUN npm ci
 
 COPY . .
 
+# URL da API vista pelo navegador (embutida no bundle em tempo de build).
+ARG VITE_API_URL=http://localhost:3000
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
-FROM nginx:1.25-alpine
+FROM nginx:1.27-alpine
 
 RUN rm /etc/nginx/conf.d/default.conf
 
