@@ -1,6 +1,8 @@
-import { useNavigate } from "react-router-dom";
-import InitialPage from "../components/initialPage";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthShell from "../components/AuthShell";
+import { Button, Field, Notice } from "../components/ui";
+import { errorMessage } from "../lib/format";
 import { register } from "../services/user/userService";
 
 function RegisterPage() {
@@ -8,81 +10,63 @@ function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const handleBack = () => {
-    navigate("/login");
-  };
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
       await register(name, email, password);
-
       navigate("/home");
-    } catch (error) {
-      console.error("Erro ao registrar usuário:", error);
-      alert("Credenciais inválidas");
+    } catch (err) {
+      setError(errorMessage(err, "Não foi possível criar a conta."));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <InitialPage title="Register">
-      <form
-        onSubmit={handleRegister}
-        className="flex flex-col gap-4 w-96 justify-center mt-14"
-      >
-        <label className="text-white">Name</label>
-        <input
-          type="text"
-          name="name"
-          id="name"
-          className="border rounded bg-gray-400 w-96 h-8 outline-0 text-white"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setName(e.target.value)
-          }
+    <AuthShell title="Criar conta" subtitle="Leva menos de um minuto">
+      <form onSubmit={handleRegister} className="flex flex-col gap-4">
+        <Field
+          label="Nome"
+          autoComplete="name"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-
-        <label className="text-white">E-mail</label>
-        <input
-          type="e-mail"
-          name="email"
-          id="email"
-          className="border rounded bg-gray-400 w-96 h-8 outline-0 text-white"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setEmail(e.target.value)
-          }
+        <Field
+          label="E-mail"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
-
-        <label className="text-white">Password</label>
-        <input
+        <Field
+          label="Senha (mínimo 8 caracteres)"
           type="password"
-          name="password"
-          id="password"
-          className="border rounded bg-gray-400 w-96 h-8 outline-0 text-white"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setPassword(e.target.value)
-          }
+          autoComplete="new-password"
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
-
-        <div className="flex flex-col gap-4 mt-4 justify-center items-center">
-          <button
-            type="submit"
-            className="border rounded bg-gray-400 cursor-pointer
-                        hover:bg-gray-500 w-40 h-10 mt-6 text-white"
-          >
-            Register
-          </button>
-          <button
-            type="button"
-            className="border rounded bg-gray-400 cursor-pointer
-                        hover:bg-gray-500 w-40 h-10 text-white"
-            onClick={handleBack}
-          >
-            Back to Login
-          </button>
-        </div>
+        {error && <Notice kind="error">{error}</Notice>}
+        <Button type="submit" disabled={loading}>
+          {loading ? "Criando…" : "Criar conta"}
+        </Button>
       </form>
-    </InitialPage>
+      <p className="mt-5 text-center text-sm text-muted">
+        Já tem conta?{" "}
+        <Link to="/login" className="font-semibold text-accent hover:underline">
+          Entrar
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
 

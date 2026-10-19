@@ -1,77 +1,77 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthShell from "../components/AuthShell";
+import { Button, Field, Notice } from "../components/ui";
+import { errorMessage } from "../lib/format";
 import { login } from "../services/user/userService";
-import InitialPage from "../components/initialPage";
-
-import { useNavigate } from "react-router-dom";
-import React, { useState } from "react";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string>("visitante@gmail.com");
-  const [password, setPassword] = useState<string>("12345678");
-
-  const handleRegister = () => {
-    navigate("/register");
-  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       await login(email, password);
       navigate("/home");
-    } catch (error) {
-      setEmail("visitante@gmail.com");
-      setPassword("12345678");
-      alert("Usuário ou senha inválidos");
-      console.log(error);
+    } catch (err) {
+      setError(errorMessage(err, "Não foi possível entrar. Tente novamente."));
+    } finally {
+      setLoading(false);
     }
   };
 
+  const fillGuest = () => {
+    setEmail("visitante@gmail.com");
+    setPassword("12345678");
+  };
+
   return (
-    <>
-      <InitialPage title="Login">
-        <form
-          onSubmit={handleLogin}
-          className="flex flex-col gap-4 w-96 justify-center mt-14"
+    <AuthShell
+      title="Bem-vindo de volta"
+      subtitle="Entre para ver o clima e os insights de IA"
+    >
+      <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        <Field
+          label="E-mail"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Field
+          label="Senha"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error && <Notice kind="error">{error}</Notice>}
+        <Button type="submit" disabled={loading}>
+          {loading ? "Entrando…" : "Entrar"}
+        </Button>
+        <Button type="button" variant="ghost" onClick={fillGuest}>
+          Usar conta de visitante
+        </Button>
+      </form>
+      <p className="mt-5 text-center text-sm text-muted">
+        Ainda não tem conta?{" "}
+        <Link
+          to="/register"
+          className="font-semibold text-accent hover:underline"
         >
-          <label className="text-white">E-mail</label>
-          <input
-            type="e-mail"
-            name="email"
-            id="email"
-            className="border rounded bg-gray-400 w-96 h-8 outline-0 text-white"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <label className="text-white">Password</label>
-          <input
-            type="password"
-            name="password"
-            id="password"
-            className="border rounded bg-gray-400 w-96 h-8 outline-0 text-white"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <div className="flex flex-col gap-4 mt-4 justify-center items-center">
-            <button
-              type="submit"
-              className="border rounded bg-gray cursor-pointer
-                         hover:bg-gray-600 w-40 h-10 mt-6 text-white"
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              className="border rounded bg-gray cursor-pointer
-                         hover:bg-gray-600 w-40 h-10 text-white"
-              onClick={handleRegister}
-            >
-              Register
-            </button>
-          </div>
-        </form>
-      </InitialPage>
-    </>
+          Cadastre-se
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
 

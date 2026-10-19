@@ -1,6 +1,7 @@
 """Importando as bibliotecas necessárias."""
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 import requests
 import schedule
@@ -14,6 +15,9 @@ LONGITUDE = os.getenv("CITY_LONGITUDE")
 LATITUDE = os.getenv("CITY_LATITUDE")
 
 URL_API = os.getenv("API_METEO_WEATHER_URL")
+
+TIMEZONE = "America/Sao_Paulo"
+REQUEST_TIMEOUT_SECONDS = 15
 
 WMO_CODES = {
     0: "Céu limpo", 1: "Principalmente limpo", 2: "Parcialmente nublado", 3: "Encoberto",
@@ -31,22 +35,24 @@ def fetch_weather():
             "longitude": LONGITUDE,
             "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
             "hourly": "precipitation_probability",
-            "timezone": "America/Sao_Paulo",
+            "timezone": TIMEZONE,
             "forecast_days": 1
         }
-        response = requests.get(URL_API, params=params)
+        response = requests.get(URL_API, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+        response.raise_for_status()
         data = response.json()
 
         current = data["current"]
         hourly = data["hourly"]
 
-        current_hourly = datetime.now().hour
+        now = datetime.now(ZoneInfo(TIMEZONE))
+        current_hourly = now.hour
         precipitation_prob = hourly["precipitation_probability"][current_hourly]
 
         condition = WMO_CODES.get(current["weather_code"], "Condição desconhecida")
 
         payload = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": now.isoformat(),
             "cidade_lat_lon": f"{LATITUDE}, {LONGITUDE}",
             "temperatura_c": current["temperature_2m"],
             "umidade_pct": current["relative_humidity_2m"],
@@ -64,7 +70,8 @@ def fetch_weather():
 def job():
     """Função de trabalho para coletar e publicar dados meteorológicos."""
     data = fetch_weather()
-    publisher_weather(data)
+    if data is not None:
+        publisher_weather(data)
 
 if __name__ == "__main__":
     print("Iniciando o monitoramento climático...")
