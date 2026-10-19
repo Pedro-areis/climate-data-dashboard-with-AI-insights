@@ -21,7 +21,7 @@ export interface GeneratedInsight {
   fromLlm: boolean;
 }
 
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 @Injectable()
 export class InsightsService {
@@ -54,7 +54,7 @@ export class InsightsService {
     }
 
     const prompt = `
-      Atue como um assistente pessoal meteorológico sarcástico e engraçado.
+      Atue como um assistente pessoal meteorológico.
       Analise os dados abaixo da minha cidade e me dê um conselho curto (máximo 2 frases)
       sobre o que vestir ou fazer. Responda em português do Brasil.
 
