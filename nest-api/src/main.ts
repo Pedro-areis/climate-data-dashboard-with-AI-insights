@@ -19,7 +19,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Weather API')
-    .setDescription('API do desafio')
+    .setDescription('API do dashboard de dados climáticos')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

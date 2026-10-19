@@ -1,4 +1,4 @@
-# ☀️ Desafio Técnico Fullstack - GDASH 2025/02
+# ☀️ Climate Data Dashboard with AI Insights
 
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
 ![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=flat&logo=nestjs&logoColor=white)
@@ -7,11 +7,7 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=flat&logo=python&logoColor=ffdd54)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=flat&logo=rabbitmq&logoColor=white)
 
-Solução para o processo seletivo da **GDASH**: pipeline distribuído que coleta dados climáticos, processa via fila, armazena em MongoDB e exibe em um dashboard com insights gerados por IA.
-
-## 📹 Vídeo de Demonstração
-
-> **https://youtu.be/XPwGA7O6QAA**
+Projeto pessoal: pipeline distribuído que coleta dados climáticos, processa via fila, armazena em MongoDB e exibe em um dashboard com insights gerados por IA.
 
 ---
 
@@ -24,7 +20,7 @@ collector-python ──► RabbitMQ ──► worker-go ──► MongoDB ◄─
 
 1. **Python:** coleta dados da *Open-Meteo API* ao iniciar e a cada 1h e publica na fila.
 2. **RabbitMQ:** desacopla coleta e armazenamento.
-3. **Go:** consome a fila (ack manual: só confirma após gravar no Mongo) e insere em `Desafio.weather`.
+3. **Go:** consome a fila (ack manual: só confirma após gravar no Mongo) e insere em `climate_dashboard.weather`.
 4. **NestJS:** autenticação JWT, CRUD de usuário, dados paginados, insight de IA (com cache), export CSV e Swagger.
 5. **React:** dashboard com KPIs, gráficos, insight da IA, tabela de coletas e gestão de conta.
 
@@ -91,14 +87,14 @@ Um único `.env` na raiz alimenta todos os serviços. Principais variáveis:
 | Variável | Descrição |
 | :--- | :--- |
 | `CITY_LATITUDE` / `CITY_LONGITUDE` | Cidade monitorada (padrão: São João del-Rei - MG) |
-| `DATABASE_URL` | Mongo. Padrão: container local. **Deve terminar em `/Desafio`** e, para Prisma, precisa de replica set |
+| `DATABASE_URL` | Mongo. Padrão: container local. **Deve terminar em `/climate_dashboard`** e, para Prisma, precisa de replica set |
 | `JWT_SECRET` | Segredo do JWT — troque em qualquer ambiente real |
 | `OPENAI_API_KEY` | Chave da Groq/OpenAI. **Opcional**: sem ela, o insight vem de uma regra local |
 | `OPENAI_BASE_URL` / `LLM_MODEL` | Provedor e modelo do LLM (padrão: Groq + `llama-3.3-70b-versatile`) |
 | `VITE_API_URL` | URL da API como o navegador a enxerga (embutida no build do front) |
 | `SEED_GUEST_USER` / `GUEST_PASSWORD` | Liga/desliga e define a senha do usuário visitante |
 
-Para usar MongoDB Atlas, troque `DATABASE_URL` pela sua connection string (terminando em `/Desafio`) — o serviço `mongo` do compose fica sem uso.
+Para usar MongoDB Atlas, troque `DATABASE_URL` pela sua connection string (terminando em `/climate_dashboard`) — o serviço `mongo` do compose fica sem uso.
 
 ### Insights de IA
 
@@ -114,7 +110,7 @@ Suba só a infraestrutura e rode o resto na máquina:
 docker compose up -d mongo rabbitmq collector-python worker-go
 ```
 
-Para a API, no `.env` use `DATABASE_URL=mongodb://localhost:27017/Desafio?replicaSet=rs0&directConnection=true` (adicione `127.0.0.1 mongo` ao arquivo hosts, pois o replica set anuncia o host `mongo`).
+Para a API, no `.env` use `DATABASE_URL=mongodb://localhost:27017/climate_dashboard?replicaSet=rs0&directConnection=true` (adicione `127.0.0.1 mongo` ao arquivo hosts, pois o replica set anuncia o host `mongo`).
 
 ```bash
 # API (porta SERVER_PORT, padrão 3000)
@@ -142,4 +138,4 @@ Documentação completa no Swagger (`/api`).
 ## 🧱 Contratos entre serviços
 
 - **Fila (Python → Go):** `timestamp` (ISO 8601 com fuso), `cidade_lat_lon`, `temperatura_c`, `umidade_pct`, `vento_kmh`, `condicao_ceu`, `probabilidade_chuva_pct`.
-- **Mongo (`Desafio.weather`):** `localization, temp, humidity, wind_speed, condition_sky, probability_rain, insights_ai, measured_at, created_at` — o `schema.prisma` e o `bson` do Go precisam permanecer iguais.
+- **Mongo (`climate_dashboard.weather`):** `localization, temp, humidity, wind_speed, condition_sky, probability_rain, insights_ai, measured_at, created_at` — o `schema.prisma` e o `bson` do Go precisam permanecer iguais.
