@@ -1,6 +1,5 @@
 # ☀️ Desafio Técnico Fullstack - GDASH 2025/02
 
-![Project Status](https://img.shields.io/badge/status-completed-green)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
 ![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=flat&logo=nestjs&logoColor=white)
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)
@@ -8,7 +7,7 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=flat&logo=python&logoColor=ffdd54)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=flat&logo=rabbitmq&logoColor=white)
 
-Solução para o processo seletivo da **GDASH**, focada em energias renováveis, tecnologia distribuída e inteligência artificial.
+Solução para o processo seletivo da **GDASH**: pipeline distribuído que coleta dados climáticos, processa via fila, armazena em MongoDB e exibe em um dashboard com insights gerados por IA.
 
 ## 📹 Vídeo de Demonstração
 
@@ -16,61 +15,131 @@ Solução para o processo seletivo da **GDASH**, focada em energias renováveis,
 
 ---
 
-## 🧭 Sobre o Projeto
+## 🧭 Pipeline de dados
 
-Este projeto é uma aplicação **Fullstack altamente distribuída** desenvolvida para coletar, processar, armazenar e visualizar dados climáticos em tempo real, gerando insights através de Inteligência Artificial.
+```
+collector-python ──► RabbitMQ ──► worker-go ──► MongoDB ◄── nest-api ◄── frontend (React)
+ (Open-Meteo, 1h)    (fila)      (consumer)                (JWT, LLM)
+```
 
-### 🚀 O Pipeline de Dados
+1. **Python:** coleta dados da *Open-Meteo API* ao iniciar e a cada 1h e publica na fila.
+2. **RabbitMQ:** desacopla coleta e armazenamento.
+3. **Go:** consome a fila (ack manual: só confirma após gravar no Mongo) e insere em `Desafio.weather`.
+4. **NestJS:** autenticação JWT, CRUD de usuário, dados paginados, insight de IA (com cache), export CSV e Swagger.
+5. **React:** dashboard com KPIs, gráficos, insight da IA, tabela de coletas e gestão de conta.
 
-1.  **Python:** Um serviço agendado coleta dados climáticos da *Open-Meteo API* a cada 1h.
-2.  **RabbitMQ:** Os dados brutos são enviados para uma fila, garantindo desacoplamento.
-3.  **Processamento (Go):** Um *worker* de alta performance em Go consome a fila e registra os dados no banco de dados.
-4.  **NestJS:** A API recebe os dados, enriquece (via IA) e expõe endpoints para o frontend.
-5.  **React:** O usuário visualiza dashboards, insights e gerencia o sistema.
+## 🏗️ Stack
 
-
-
----
-
-## 🏗️ Arquitetura e Tecnologias
-
-A solução foi containerizada utilizando **Docker** e orquestrada via **Docker Compose**, com um **Nginx** atuando como *Reverse Proxy* para roteamento de tráfego.
-
-### Stack Tecnológica
-
-| Componente | Tecnologia | Responsabilidade |
-| :--- | :--- | :--- |
-| **Frontend** | React, Vite, Tailwind, Shadcn/ui | Dashboard interativo e gestão de usuários. |
-| **Backend API** | NestJS (TypeScript) | Regras de negócio, Auth (JWT), Integração IA. |
-| **Database** | MongoDB | Armazenamento de logs climáticos e usuários. |
-| **Producer** | Python | Coleta periódica de dados meteorológicos. |
-| **Worker** | Go (Golang) | Consumo de fila e repasse de dados. |
-| **Broker** | RabbitMQ | Fila de mensagens para comunicação assíncrona. |
-| **Proxy** | Nginx | Servidor web e proxy reverso. |
-| **IA** | OpenAI / Groq | Geração de insights climáticos. |
+| Componente | Tecnologia |
+| :--- | :--- |
+| Frontend | React 19, Vite 7, Tailwind 4, Recharts, React Router 7 (servido por Nginx como estáticos) |
+| API | NestJS 11, Prisma (MongoDB), JWT, bcrypt, SDK `openai` (Groq) |
+| Banco | MongoDB 7 (container local, replica set de 1 nó) |
+| Collector | Python 3.11 (`requests`, `schedule`, `pika`) |
+| Worker | Go (`streadway/amqp`, mongo-driver) |
+| Broker | RabbitMQ 3 |
 
 ---
 
-## ⚡ Pré-requisitos
+## 🛠️ Como rodar (Docker)
 
-Para rodar este projeto, você precisa apenas de:
-
-* [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/) instalados.
-* Uma chave de API da **OpenAI** ou **Groq** (para os insights de IA).
-
----
-
-## 🛠️ Como Rodar a Aplicação
-
-A aplicação foi configurada para rodar com um único comando.
-
-### 1. Configuração de Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz do projeto (baseado no `.env.example` fornecido) ou configure as variáveis individuais de cada serviço se preferir.
-
-### 2. Executando com Docker Compose
-
-Este comando irá construir as imagens e iniciar todos os contêineres (Frontend, Backend, Python, Go, RabbitMQ).
+**Pré-requisito:** [Docker](https://www.docker.com/) com Docker Compose. Nada mais.
 
 ```bash
-docker-compose up --build
+# 1. Crie o .env (os valores padrão já funcionam)
+cp .env.example .env
+
+# 2. Suba tudo
+docker compose up --build -d
+
+# 3. Acompanhe os logs (opcional)
+docker compose logs -f
+```
+
+Aguarde ~1 minuto na primeira vez (build das imagens). Depois acesse:
+
+| Serviço | URL |
+| :--- | :--- |
+| **Dashboard** | http://localhost |
+| API + Swagger | http://localhost:3000/api |
+| RabbitMQ (guest/guest) | http://localhost:15672 |
+
+### Login
+
+O usuário de demonstração é criado automaticamente na subida da API:
+
+- **E-mail:** `visitante@gmail.com`
+- **Senha:** `12345678`
+
+A conta de visitante é somente leitura. Você também pode criar a sua em **Cadastre-se**.
+
+A primeira coleta é publicada assim que o collector inicia; novas coletas chegam a cada hora (o dashboard atualiza sozinho a cada 5 min).
+
+### Parar / limpar
+
+```bash
+docker compose down        # para os containers (dados do Mongo ficam no volume)
+docker compose down -v     # para e apaga os dados
+```
+
+---
+
+## ⚙️ Configuração (`.env`)
+
+Um único `.env` na raiz alimenta todos os serviços. Principais variáveis:
+
+| Variável | Descrição |
+| :--- | :--- |
+| `CITY_LATITUDE` / `CITY_LONGITUDE` | Cidade monitorada (padrão: São João del-Rei - MG) |
+| `DATABASE_URL` | Mongo. Padrão: container local. **Deve terminar em `/Desafio`** e, para Prisma, precisa de replica set |
+| `JWT_SECRET` | Segredo do JWT — troque em qualquer ambiente real |
+| `OPENAI_API_KEY` | Chave da Groq/OpenAI. **Opcional**: sem ela, o insight vem de uma regra local |
+| `OPENAI_BASE_URL` / `LLM_MODEL` | Provedor e modelo do LLM (padrão: Groq + `llama-3.3-70b-versatile`) |
+| `VITE_API_URL` | URL da API como o navegador a enxerga (embutida no build do front) |
+| `SEED_GUEST_USER` / `GUEST_PASSWORD` | Liga/desliga e define a senha do usuário visitante |
+
+Para usar MongoDB Atlas, troque `DATABASE_URL` pela sua connection string (terminando em `/Desafio`) — o serviço `mongo` do compose fica sem uso.
+
+### Insights de IA
+
+Com `OPENAI_API_KEY` configurada, o texto é gerado pelo LLM e **salvo** no documento; requisições seguintes reutilizam o texto salvo (use "Gerar outro" no dashboard para regenerar). Sem chave, ou se o LLM falhar, a API devolve um conselho baseado em regras simples (não é persistido).
+
+---
+
+## 💻 Desenvolvimento local (sem Docker para API/Front)
+
+Suba só a infraestrutura e rode o resto na máquina:
+
+```bash
+docker compose up -d mongo rabbitmq collector-python worker-go
+```
+
+Para a API, no `.env` use `DATABASE_URL=mongodb://localhost:27017/Desafio?replicaSet=rs0&directConnection=true` (adicione `127.0.0.1 mongo` ao arquivo hosts, pois o replica set anuncia o host `mongo`).
+
+```bash
+# API (porta SERVER_PORT, padrão 3000)
+cd nest-api && npm install && npx prisma generate && npm run start:dev
+
+# Frontend (http://localhost:5173)
+cd frontend && npm install && npm run dev
+```
+
+Lint: `npm run lint` em `nest-api` e `frontend`.
+
+## 🔌 Endpoints principais
+
+| Método | Rota | Descrição |
+| :--- | :--- | :--- |
+| POST | `/users/register` · `/users/login` | Cadastro e login (retorna JWT) |
+| GET | `/users/me` | Usuário autenticado |
+| PATCH/DELETE | `/users/update/:id` · `/users/delete/:id` | Só o próprio usuário |
+| GET | `/weather/all?page=1&limit=50` | Coletas paginadas (mais recentes primeiro) |
+| GET | `/weather/insights/:id?refresh=true` | Insight de IA (cacheado) |
+| GET | `/exports` | CSV de todas as coletas |
+
+Documentação completa no Swagger (`/api`).
+
+## 🧱 Contratos entre serviços
+
+- **Fila (Python → Go):** `timestamp` (ISO 8601 com fuso), `cidade_lat_lon`, `temperatura_c`, `umidade_pct`, `vento_kmh`, `condicao_ceu`, `probabilidade_chuva_pct`.
+- **Mongo (`Desafio.weather`):** `localization, temp, humidity, wind_speed, condition_sky, probability_rain, insights_ai, measured_at, created_at` — o `schema.prisma` e o `bson` do Go precisam permanecer iguais.

@@ -30,7 +30,7 @@ export default function TrendChart({ data, series, domain }: TrendChartProps) {
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
           <CartesianGrid stroke="#223052" strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="time"
@@ -44,7 +44,8 @@ export default function TrendChart({ data, series, domain }: TrendChartProps) {
             tickLine={false}
             axisLine={false}
             domain={domain ?? ["auto", "auto"]}
-            width={48}
+            width={52}
+            tickFormatter={(v: number) => String(Math.round(v * 10) / 10)}
           />
           <Tooltip
             contentStyle={{
