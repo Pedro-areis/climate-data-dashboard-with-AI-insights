@@ -1,29 +1,52 @@
-import { Routes, Route, BrowserRouter } from "react-router-dom";
+import type { ReactNode } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import AppLayout from "../components/AppLayout";
+import ConfigPage from "../pages/config";
+import HomePage from "../pages/home";
 import LoginPage from "../pages/login";
 import RegisterPage from "../pages/register";
-import HomePage from "../pages/home";
-import ConfigPage from "../pages/config";
+import { hasToken } from "../services/user/userService";
 
-function isAutenticated() {
-  const token = localStorage.getItem("token");
-  return !!token;
+// Avaliado a cada render da rota (não uma vez só), então login/logout refletem na hora.
+function RequireAuth({ children }: { children: ReactNode }) {
+  return hasToken() ? children : <Navigate to="/login" replace />;
+}
+
+function PublicOnly({ children }: { children: ReactNode }) {
+  return hasToken() ? <Navigate to="/home" replace /> : children;
 }
 
 function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route
-          path="/home"
-          element={isAutenticated() ? <HomePage /> : <LoginPage />}
+          path="/login"
+          element={
+            <PublicOnly>
+              <LoginPage />
+            </PublicOnly>
+          }
         />
         <Route
-          path="/config"
-          element={isAutenticated() ? <ConfigPage /> : <LoginPage />}
+          path="/register"
+          element={
+            <PublicOnly>
+              <RegisterPage />
+            </PublicOnly>
+          }
         />
-        <Route path="*" element={<LoginPage />} />
+        <Route
+          element={
+            <RequireAuth>
+              <AppLayout />
+            </RequireAuth>
+          }
+        >
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/config" element={<ConfigPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </BrowserRouter>
   );
