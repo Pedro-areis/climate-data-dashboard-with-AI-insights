@@ -58,7 +58,7 @@ export default function AppLayout() {
               🌤️
             </span>
             <div>
-              <p className="font-bold leading-tight">Clima GDASH</p>
+              <p className="font-bold leading-tight">Clima Dashboard</p>
               <p className="text-xs text-muted">São João del-Rei · MG</p>
             </div>
           </div>

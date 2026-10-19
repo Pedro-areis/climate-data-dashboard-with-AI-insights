@@ -29,7 +29,7 @@ func main() {
 
 	defer mongoClient.Disconnect(context.TODO())
 
-	repo := database.NewWeatherRepository(mongoClient, "Desafio", "weather")
+	repo := database.NewWeatherRepository(mongoClient, "climate_dashboard", "weather")
 
 	fmt.Println("Conectando ao RabbitMQ...")
 	conn, err := dialRabbit(os.Getenv("RABBITMQ_URL"))
