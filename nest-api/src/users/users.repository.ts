@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -27,24 +26,22 @@ export class UsersRepository {
     });
   }
 
-  async updateUser(id: string, data: UpdateUserRequest) {
-    const existingUser = await this.prisma.users.findUnique({
+  async findUserById(id: string) {
+    return await this.prisma.users.findUnique({
       where: { id },
     });
+  }
 
-    if (!existingUser) {
-      throw new Error('User not found');
-    }
+  // Campos vazios ou ausentes mantêm o valor atual.
+  async updateUser(id: string, data: UpdateUserRequest) {
+    const updatedData: { name?: string; email?: string; password?: string } =
+      {};
 
+    if (data.name) updatedData.name = data.name;
+    if (data.email) updatedData.email = data.email;
     if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+      updatedData.password = await bcrypt.hash(data.password, 10);
     }
-
-    const updatedData = {
-      name: data.name == '' ? existingUser.name : data.name,
-      email: data.email == '' ? existingUser.email : data.email,
-      password: data.password == '' ? existingUser.password : data.password,
-    };
 
     return await this.prisma.users.update({
       where: { id },

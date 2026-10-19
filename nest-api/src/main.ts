@@ -28,6 +28,8 @@ async function bootstrap() {
 
   SwaggerModule.setup('api', app, document);
 
+  app.enableShutdownHooks();
+
   await app.listen(process.env.SERVER_PORT || 3000, '0.0.0.0');
 }
 bootstrap();

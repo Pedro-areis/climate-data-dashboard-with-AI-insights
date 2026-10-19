@@ -1,29 +1,31 @@
-import { Injectable } from "@nestjs/common";
-import { WeatherData } from "src/insights/insights.service";
-import { PrismaService } from "src/prisma/prisma.service";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class WeatherRepository {
-    constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
-    async getWeatherAll() {
-        return await this.prisma.weather.findMany({
-            orderBy: { createdAt: 'desc' }
-        });
-    }
+  async getWeatherPage(skip: number, take: number) {
+    const [items, total] = await Promise.all([
+      this.prisma.weather.findMany({
+        orderBy: { measuredAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.weather.count(),
+    ]);
 
-    async newInsight(insight: string, id: string) {
-        return await this.prisma.weather.update({
-            where: { id: id },
-            data: { insightsAI: insight }
-        })
-    }
+    return { items, total };
+  }
 
-    async getInsight(id: string) {
-        const data = await this.prisma.weather.findUnique({ 
-                where: { id: id },
-            });
+  async newInsight(insight: string, id: string) {
+    return await this.prisma.weather.update({
+      where: { id },
+      data: { insightsAI: insight },
+    });
+  }
 
-        return data;
-    }
+  async getInsight(id: string) {
+    return await this.prisma.weather.findUnique({ where: { id } });
+  }
 }
