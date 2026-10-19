@@ -15,7 +15,4 @@ WORKDIR /app
 
 COPY --from=build /app/worker-go .
 
-ENV RABBITMQ_URL=""
-ENV MONGODB_URL=""
-
 CMD ["./worker-go"]
